@@ -1,34 +1,32 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React, { useEffect, useState } from 'react'
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
+import AuthPage from './components/AuthPage'
+import Dashboard from './components/Dashboard'
 
-function App() {
-  const [count, setCount] = useState(0)
-
+// --- Main App Component (integrates routing) ---
+function App () {
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <BrowserRouter>
+      <Routes>
+        <Route path='/' element={<AuthPage />} />
+        <Route path='/dashboard' element={<Dashboard />} />
+        {/* Fallback for any unmatched routes */}
+        <Route
+          path='*'
+          element={
+            <div className='min-h-screen bg-gray-100 flex items-center justify-center font-inter'>
+              <h1 className='text-4xl text-gray-700'>404 - Page Not Found</h1>
+            </div>
+          }
+        />
+      </Routes>
+      {/* Tailwind CSS and Inter Font CDN links - crucial for styling */}
+      <script src='https://cdn.tailwindcss.com'></script>
+      <link
+        href='https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap'
+        rel='stylesheet'
+      />
+    </BrowserRouter>
   )
 }
 
