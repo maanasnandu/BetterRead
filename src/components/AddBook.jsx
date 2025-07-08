@@ -2,9 +2,11 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faStar as faStarSolid } from '@fortawesome/free-solid-svg-icons'
-import { faStar as faStarRegular } from '@fortawesome/free-solid-svg-icons'
-// import { faStar as faStarRegular } from '@fortawesome/free-regular-svg-icons';
+// import { faStar as faStarRegular } from '@fortawesome/free-regular-svg-icons'
 import './AddBook.css'
+
+// Firestore Imports
+import { collection, addDoc } from 'firebase/firestore'
 
 const genres = [
   'Fiction',
@@ -29,14 +31,16 @@ const genres = [
   'Comics & Graphic Novels'
 ]
 
-const AddBook = ({ onAddBook }) => {
+// AddBook component now accepts 'db' and 'userId' as props
+const AddBook = ({ db, userId }) => {
   const navigate = useNavigate()
   const [bookName, setBookName] = useState('')
   const [author, setAuthor] = useState('')
   const [review, setReview] = useState('')
-  const [selectedGenres, setSelectedGenres] = useState([]) // State for multi-select genres
-  const [rating, setRating] = useState(0) // 0 to 5 stars
-  const [errorMessage, setErrorMessage] = useState('') // State for validation messages
+  const [selectedGenres, setSelectedGenres] = useState([])
+  const [rating, setRating] = useState(0)
+  const [errorMessage, setErrorMessage] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false) // State for submission loading
 
   // Handle genre checkbox change
   const handleGenreChange = e => {
@@ -51,55 +55,83 @@ const AddBook = ({ onAddBook }) => {
   }
 
   // Handle form submission
-  const handleSubmit = e => {
-    e.preventDefault() // Prevent default form submission behavior
-    setErrorMessage('') // Clear previous error messages
+  const handleSubmit = async e => {
+    e.preventDefault()
+    setErrorMessage('')
+    setIsSubmitting(true) // Start loading state
 
     // Client-side validation
     if (!bookName.trim()) {
       setErrorMessage('Book Name is required.')
+      setIsSubmitting(false)
       return
     }
     if (!author.trim()) {
       setErrorMessage('Author is required.')
+      setIsSubmitting(false)
       return
     }
     if (selectedGenres.length === 0) {
       setErrorMessage('Please select at least one genre.')
+      setIsSubmitting(false)
       return
     }
     if (!review.trim()) {
       setErrorMessage('Review is required.')
+      setIsSubmitting(false)
       return
     }
     if (rating === 0) {
       setErrorMessage('Please provide a rating.')
+      setIsSubmitting(false)
       return
     }
 
-    // Create a new book object
+    // Ensure db and userId are available before attempting to save
+    if (!db || !userId) {
+      setErrorMessage('Database not ready. Please try again.')
+      setIsSubmitting(false)
+      return
+    }
+
     const newBook = {
-      id: Date.now(), // Unique ID for the book
       bookName,
       author,
       review,
-      genres: selectedGenres, // Include selected genres
+      genres: selectedGenres,
       rating,
-      dateAdded: new Date().toLocaleDateString() // Add current date
+      dateAdded: new Date().toLocaleDateString(),
+      userId: userId // Store the user ID with the book
     }
 
-    // Call the prop function to add the book to the parent's state
-    onAddBook(newBook)
+    try {
+      // Define the collection path for user-specific books
+      // This follows the private data path: /artifacts/{appId}/users/{userId}/books
+      const appId =
+        typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'
+      const booksCollectionRef = collection(
+        db,
+        `artifacts/${appId}/users/${userId}/books`
+      )
 
-    // Clear the form fields
-    setBookName('')
-    setAuthor('')
-    setReview('')
-    setSelectedGenres([]) // Clear selected genres
-    setRating(0)
+      // Add the new book document to Firestore
+      await addDoc(booksCollectionRef, newBook)
 
-    // Navigate back to the dashboard after adding the book
-    navigate('/dashboard')
+      // Clear the form fields
+      setBookName('')
+      setAuthor('')
+      setReview('')
+      setSelectedGenres([])
+      setRating(0)
+
+      // Navigate back to the dashboard after adding the book
+      navigate('/dashboard')
+    } catch (error) {
+      console.error('Error adding document: ', error)
+      setErrorMessage('Failed to add book. Please try again.')
+    } finally {
+      setIsSubmitting(false) // End loading state
+    }
   }
 
   return (
@@ -178,7 +210,7 @@ const AddBook = ({ onAddBook }) => {
               {[1, 2, 3, 4, 5].map(star => (
                 <FontAwesomeIcon
                   key={star}
-                  icon={star <= rating ? faStarSolid : faStarRegular}
+                  icon={star <= rating ? faStarSolid : faStarSolid}
                   className={`star-icon ${
                     star <= rating ? 'star-icon-selected' : ''
                   }`}
@@ -189,8 +221,12 @@ const AddBook = ({ onAddBook }) => {
           </div>
 
           {/* Submit Button */}
-          <button type='submit' className='submit-button'>
-            Add Book
+          <button
+            type='submit'
+            className='submit-button'
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Adding Book...' : 'Add Book'}
           </button>
         </form>
       </div>

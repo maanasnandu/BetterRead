@@ -10,12 +10,17 @@ import {
   faCog,
   faPlusSquare
 } from '@fortawesome/free-solid-svg-icons'
+
+import { collection, query, onSnapshot, where } from 'firebase/firestore'
+
 import Footer from './Footer'
 
-const Dashboard = ({ books }) => {
+const Dashboard = ({ db, userId }) => {
   const navigate = useNavigate()
   const [userProfile, setUserProfile] = useState(null)
   const [activeTab, setActiveTab] = useState('posts') // State to manage active tab
+  const [books, setBooks] = useState([])
+  const [isLoadingBooks, setIsLoadingBooks] = useState(true)
 
   useEffect(() => {
     // Retrieve user profile from local storage
@@ -28,6 +33,37 @@ const Dashboard = ({ books }) => {
     }
   }, [navigate])
 
+  useEffect(() => {
+    if (db && userId) {
+      setIsLoadingBooks(true)
+      const appId = typeof __app_id != 'undefined' ? __app_id : 'default-app-id'
+      const booksCollectionRef = collection(
+        db,
+        `artifacts/${appId}/users/${userId}/books`
+      )
+
+      const q = query(booksCollectionRef, where('userId', '==', userId))
+
+      const unsubscribe = onSnapshot(
+        q,
+        snapshot => {
+          const fetchedBooks = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }))
+          setBooks(fetchedBooks)
+          setIsLoadingBooks(false)
+        },
+        error => {
+          console.error('Error Fetching Books: ', error)
+          setIsLoadingBooks(false)
+        }
+      )
+
+      return () => unsubscribe()
+    }
+  }, [db, userId])
+
   // Handle user logout
   const handleLogout = () => {
     localStorage.removeItem('userProfile') // Clear user profile from local storage
@@ -35,10 +71,21 @@ const Dashboard = ({ books }) => {
   }
 
   // Show loading state if user profile is not yet loaded
-  if (!userProfile) {
+  if (!userProfile || isLoadingBooks) {
     return (
-      <div className='loading-container'>
-        <p className='loading-text'>Loading dashboard or redirecting...</p>
+      <div
+        className='loading-container'
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+          backgroundColor: '#f3f4f6'
+        }}
+      >
+        <p style={{ fontSize: '1.25rem', color: '#4b5563' }}>
+          Loading dashboard...
+        </p>
       </div>
     )
   }
