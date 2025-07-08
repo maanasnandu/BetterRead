@@ -1,73 +1,93 @@
+// components/AuthPage.jsx
 import React, { useEffect, useState } from 'react'
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
-import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google'
-import { jwtDecode } from 'jwt-decode' // Used to decode the JWT token from Google
+import { useNavigate } from 'react-router-dom'
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth' // Import GoogleAuthProvider and signInWithPopup
 
 // IMPORTANT: Ensure this path is correct for your project structure.
 // If your image is in 'src/assets', you might need '../assets/BookshelfAuth.PNG'
 // For this self-contained example, assuming it's in the same directory as AuthPage.jsx
-import BookshelfAuthImage from '../assets/BookshelfAuth.PNG'
-import BookShelfImg from '../assets/bookShelf.png'
-import BookLogo from '../assets/bookLogo.png'
+//import BookshelfAuthImage from '../assets/BookshelfAuth.PNG'; // Ensure this path is correct
+import BookShelfImg from '../assets/bookShelf.png' // Ensure this path is correct
+//import BookLogo from '../assets/bookLogo.png'; // Ensure this path is correct
 
-const GOOGLE_CLIENT_ID =
-  '722735113713-e1c5bl04m18gabt2luildt63ko2lhti3.apps.googleusercontent.com'
+// Assuming AuthPage.css exists and is correctly linked
+import './AuthPage.css';
 
-// --- AuthPage Component ---
-const AuthPage = () => {
-  const [message, setMessage] = useState('') // State for custom message box
-  const [showMessageBox, setShowMessageBox] = useState(false) // State to control message box visibility
+const AuthPage = ({ auth, userId }) => {
+  // Receive auth and userId as props
+  const navigate = useNavigate()
+  const [errorMessage, setErrorMessage] = useState('')
   const [isRedirecting, setIsRedirecting] = useState(false) // State for redirect loading
-  const navigate = useNavigate() // Initialize useNavigate hook for routing
 
-  // Function to display a message in a custom message box
-  const showMessage = msg => {
-    setMessage(msg)
-    setShowMessageBox(true)
-    // Automatically hide the message after 3 seconds
-    setTimeout(() => {
-      setShowMessageBox(false)
-      setMessage('')
-    }, 3000)
-  }
-
-  // Callback function for successful Google login
-  const handleSuccess = credentialResponse => {
-    try {
-      const decoded = jwtDecode(credentialResponse.credential)
-      console.log('Login Success: Decoded JWT:', decoded)
-
-      // Immediately set redirecting state and show message
-      setIsRedirecting(true)
-      showMessage(`Welcome, ${decoded.name}! Redirecting to dashboard...`)
-
-      // Use localStorage to persist user info, so Dashboard can access it
-      localStorage.setItem('userProfile', JSON.stringify(decoded))
-
-      console.log('Attempting to navigate to /dashboard in 1.5 seconds...')
-      // Redirect to the dashboard after a short delay to show the message
-      setTimeout(() => {
-        console.log("Executing navigate('/dashboard')...")
-        navigate('/dashboard')
-        console.log("navigate('/dashboard') called.")
-      }, 1500) // Give user a moment to read the message
-    } catch (error) {
-      console.error('Error decoding JWT or processing login:', error)
-      showMessage('An error occurred during login. Please try again.')
-      setIsRedirecting(false) // Hide redirecting message on error
+  useEffect(() => {
+    console.log('AuthPage useEffect: userId changed to', userId)
+    if (userId) {
+      console.log(
+        'AuthPage: User already authenticated, navigating to /dashboard'
+      )
+      navigate('/dashboard')
     }
-  }
+  }, [userId, navigate])
 
-  // Callback function for failed Google login
-  const handleError = () => {
-    console.error('Login Failed')
-    showMessage('Google login failed. Please try again.')
-    setIsRedirecting(false) // Hide redirecting message on error
+  const handleGoogleSignIn = async () => {
+    console.log('handleGoogleSignIn called.')
+    console.log('Current auth instance:', auth) // Log the auth instance
+
+    if (!auth) {
+      setErrorMessage(
+        'Firebase Auth is not initialized. Please wait or check App.jsx.'
+      )
+      console.error(
+        'Firebase Auth is null or undefined when trying to sign in.'
+      )
+      return
+    }
+
+    const provider = new GoogleAuthProvider()
+    try {
+      setIsRedirecting(true) // Start loading indicator
+      setErrorMessage('') // Clear previous error messages
+
+      console.log('Attempting signInWithPopup...')
+      const result = await signInWithPopup(auth, provider)
+      console.log('signInWithPopup successful:', result)
+
+      const user = result.user
+      const userProfile = {
+        name: user.displayName,
+        email: user.email,
+        picture: user.photoURL,
+        uid: user.uid
+      }
+
+      localStorage.setItem('userProfile', JSON.stringify(userProfile))
+      console.log('User profile stored in localStorage:', userProfile)
+
+      setIsRedirecting(false) // Stop loading indicator
+      navigate('/dashboard') // Navigate to dashboard on successful login
+    } catch (error) {
+      setIsRedirecting(false) // Stop loading indicator on error
+      console.error('Google Sign-In Error:', error)
+
+      if (error.code === 'auth/popup-closed-by-user') {
+        setErrorMessage('Sign-in popup closed. Please try again.')
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        setErrorMessage('Sign-in cancelled. Please try again.')
+      } else if (error.code === 'auth/auth-domain-config-error') {
+        setErrorMessage(
+          'Firebase Auth domain configuration error. Check your Firebase console.'
+        )
+      } else {
+        setErrorMessage(
+          'Failed to sign in with Google. Please try again. Check console for details.'
+        )
+      }
+    }
   }
 
   // Render the login page
   return (
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+    <div>
       {/* Embedded Vanilla CSS for styling */}
       <style>
         {`
@@ -281,7 +301,6 @@ const AuthPage = () => {
               Sign in to manage your collection and discover new reads.
             </p>
 
-            {/* Conditional rendering based on redirecting state */}
             {isRedirecting ? (
               <div className='redirecting-message'>
                 <svg
@@ -311,29 +330,26 @@ const AuthPage = () => {
                 <p className='google-login-prompt'>
                   Please sign in with your Google account:
                 </p>
-                {/* Google Login Button - styled by the library, centered within its container */}
-                <div className='google-login-button-container'>
-                  <GoogleLogin
-                    onSuccess={handleSuccess}
-                    onError={handleError}
-                    size='large'
-                    shape='rectangular'
-                    theme='outline'
+                <button
+                  onClick={handleGoogleSignIn}
+                  className='google-signin-button'
+                >
+                  <img
+                    src='https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg'
+                    alt='Google logo'
+                    className='google-icon'
                   />
-                </div>
+                  Sign in with Google
+                </button>
               </div>
+            )}
+            {errorMessage && (
+              <p className='auth-error-message'>{errorMessage}</p>
             )}
           </div>
         </div>
-
-        {/* Custom Message Box */}
-        {showMessageBox && (
-          <div className='message-box'>
-            <p>{message}</p>
-          </div>
-        )}
       </div>
-    </GoogleOAuthProvider>
+    </div>
   )
 }
 

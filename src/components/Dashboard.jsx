@@ -12,7 +12,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 
 import { collection, query, onSnapshot, where } from 'firebase/firestore'
-
+import { getAuth } from 'firebase/auth'
 import Footer from './Footer'
 
 const Dashboard = ({ db, userId }) => {
@@ -61,13 +61,22 @@ const Dashboard = ({ db, userId }) => {
       )
 
       return () => unsubscribe()
+    } else if (userId === null) {
+      setIsLoadingBooks(false)
+      setBooks([])
     }
   }, [db, userId])
 
   // Handle user logout
-  const handleLogout = () => {
-    localStorage.removeItem('userProfile') // Clear user profile from local storage
-    navigate('/') // Redirect to home page
+  const handleLogout = async () => {
+    try {
+      const authInstance = getAuth()
+      await authInstance.signOut()
+      localStorage.removeItem('userProfile') // Clear user profile from local storage
+      navigate('/') // Redirect to home page
+    } catch (error) {
+      console.log('Error Signing out: ', error)
+    }
   }
 
   // Show loading state if user profile is not yet loaded

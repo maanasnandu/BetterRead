@@ -3,12 +3,7 @@ import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import AuthPage from './components/AuthPage'
 import Dashboard from './components/Dashboard'
 import { initializeApp } from 'firebase/app'
-import {
-  getAuth,
-  signInAnonymously,
-  signInWithCustomToken,
-  onAuthStateChanged
-} from 'firebase/auth'
+import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 import AddBook from './components/AddBook'
 
@@ -57,35 +52,51 @@ function App () {
       setDb(firestoreDb)
       setAuth(firebaseAuth)
 
-      const unsubscribe = onAuthStateChanged(firebaseAuth, async user => {
+      const unsubscribe = onAuthStateChanged(firebaseAuth, user => {
         if (user) {
           setUserId(user.uid)
-          setIsFirebaseReady(true)
-        } else {
-          try {
-            const initialAuthToken =
-              typeof __initial_auth_token !== 'undefined'
-                ? __initial_auth_token
-                : null
-            if (initialAuthToken) {
-              await signInWithCustomToken(firebaseAuth, initialAuthToken)
-            } else {
-              await signInAnonymously(firebaseAuth)
-            }
-          } catch (error) {
-            console.log('Error signing in firebase: ', error)
-            setUserId(crypto.randomUUID())
-            setIsFirebaseReady(false)
+
+          const userProfile = {
+            name: user.displayName || 'Anonymous User',
+            email: user.email,
+            picture: user.photoURL,
+            uid: user.uid
           }
+          localStorage.setItem('userProfile', JSON.stringify(userProfile))
+
+          setIsFirebaseReady(true)
+          console.log(
+            'App.jsx: User authenticated. userId:',
+            user.uid,
+            'isFirebaseReady:',
+            true
+          )
+        } else {
+          setUserId(null)
+          localStorage.removeItem('userProfile')
+          setIsFirebaseReady(true)
+          console.log(
+            'App.jsx: No user authenticated. userId: null, isFirebaseReady:',
+            true
+          )
         }
       })
       return () => unsubscribe()
     } catch (error) {
       console.log('Failed to Initialize Firebase', error)
-      setUserId(crypto.randomUUID())
+      setUserId(null)
       setIsFirebaseReady(true)
     }
   }, [])
+
+  console.log(
+    'App.jsx: Render. isFirebaseReady:',
+    isFirebaseReady,
+    'userId:',
+    userId,
+    'auth object:',
+    auth
+  )
 
   if (!isFirebaseReady) {
     return (
@@ -113,7 +124,7 @@ function App () {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path='/' element={<AuthPage />} />
+        <Route path='/' element={<AuthPage auth={auth} userId={userId} />} />
         <Route
           path='/dashboard'
           element={<Dashboard db={db} userId={userId} />}
