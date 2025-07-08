@@ -1,5 +1,8 @@
 import React from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Link } from 'react-router-dom'; 
+
+import AddBook from './AddBook'
 import {
   faHome,
   faBook,
@@ -7,30 +10,35 @@ import {
   faGlobe,
   faUser
 } from '@fortawesome/free-solid-svg-icons'
-import './Footer.css';
+import './Footer.css'
 
 const Footer = () => {
   return (
-    <footer className="footer">
-      <a href="#" className="footer-link">
-        <FontAwesomeIcon icon={faHome} className="footer-icon" />
-        <span className="footer-label">Home</span>
+    <footer className='footer'>
+      <a href='#' className='footer-link'>
+        <FontAwesomeIcon icon={faHome} className='footer-icon' />
+        <span className='footer-label'>Home</span>
       </a>
-      <a href="#" className="footer-link">
-        <FontAwesomeIcon icon={faBook} className="footer-icon" />
-        <span className="footer-label">Books</span>
+      <a href='#' className='footer-link'>
+        <FontAwesomeIcon icon={faBook} className='footer-icon' />
+        <span className='footer-label'>Books</span>
       </a>
-      <a href="#" className="footer-link">
-        <FontAwesomeIcon icon={faPlusCircle} className="footer-icon" />
-        <span className="footer-label">Add</span>
+      {/* <a href='#' className='footer-link'> */}
+      <Link to='/addBook' className='footer-link'>
+        {' '}
+        {/* This is the key change for Add */}
+        <FontAwesomeIcon icon={faPlusCircle} className='footer-icon' />
+        <span className='footer-label'>Add</span>
+      </Link>
+      {/* <span className='footer-label'>Add</span> */}
+      {/* </a> */}
+      <a href='#' className='footer-link'>
+        <FontAwesomeIcon icon={faGlobe} className='footer-icon' />
+        <span className='footer-label'>Explore</span>
       </a>
-      <a href="#" className="footer-link">
-        <FontAwesomeIcon icon={faGlobe} className="footer-icon" />
-        <span className="footer-label">Explore</span>
-      </a>
-      <a href="#" className="footer-link">
-        <FontAwesomeIcon icon={faUser} className="footer-icon" />
-        <span className="footer-label">Profile</span>
+      <a href='#' className='footer-link'>
+        <FontAwesomeIcon icon={faUser} className='footer-icon' />
+        <span className='footer-label'>Profile</span>
       </a>
     </footer>
   )

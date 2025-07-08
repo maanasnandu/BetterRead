@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+
 import {
   faBook,
   faTh,
@@ -11,7 +12,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import Footer from './Footer'
 
-const Dashboard = () => {
+const Dashboard = ({ books }) => {
   const navigate = useNavigate()
   const [userProfile, setUserProfile] = useState(null)
   const [activeTab, setActiveTab] = useState('posts') // State to manage active tab
@@ -42,29 +43,29 @@ const Dashboard = () => {
     )
   }
 
-  // Combined array for bookshelf content
-  const shelfContent = [
-    // Row 1
-    { type: 'book', height: 'h-40', color: 'bg-blue-300' },
-    { type: 'book', height: 'h-48', color: 'bg-red-300' },
-    { type: 'book', height: 'h-36', color: 'bg-green-300' },
-    { type: 'decorative', icon: '🌵' }, // Cactus
-    // Row 2
-    { type: 'decorative', icon: '👓' }, // Glasses
-    { type: 'book', height: 'h-44', color: 'bg-purple-300' },
-    { type: 'book', height: 'h-52', color: 'bg-yellow-300' },
-    { type: 'decorative', icon: '🗓️' }, // Calendar
-    // Row 3
-    { type: 'book', height: 'h-40', color: 'bg-indigo-300' },
-    { type: 'book', height: 'h-48', color: 'bg-pink-300' },
-    { type: 'decorative', icon: '🤠' }, // Hat
-    { type: 'book', height: 'h-36', color: 'bg-teal-300' },
-    // Row 4
-    { type: 'decorative', icon: '🌐' }, // Globe
-    { type: 'book', height: 'h-44', color: 'bg-orange-300' },
-    { type: 'book', height: 'h-52', color: 'bg-lime-300' },
-    { type: 'decorative', icon: '🌹' } // Rose
-  ]
+  // // Combined array for bookshelf content
+  // const shelfContent = [
+  //   // Row 1
+  //   { type: 'book', height: 'h-40', color: 'bg-blue-300' },
+  //   { type: 'book', height: 'h-48', color: 'bg-red-300' },
+  //   { type: 'book', height: 'h-36', color: 'bg-green-300' },
+  //   { type: 'decorative', icon: '🌵' }, // Cactus
+  //   // Row 2
+  //   { type: 'decorative', icon: '👓' }, // Glasses
+  //   { type: 'book', height: 'h-44', color: 'bg-purple-300' },
+  //   { type: 'book', height: 'h-52', color: 'bg-yellow-300' },
+  //   { type: 'decorative', icon: '🗓️' }, // Calendar
+  //   // Row 3
+  //   { type: 'book', height: 'h-40', color: 'bg-indigo-300' },
+  //   { type: 'book', height: 'h-48', color: 'bg-pink-300' },
+  //   { type: 'decorative', icon: '🤠' }, // Hat
+  //   { type: 'book', height: 'h-36', color: 'bg-teal-300' },
+  //   // Row 4
+  //   { type: 'decorative', icon: '🌐' }, // Globe
+  //   { type: 'book', height: 'h-44', color: 'bg-orange-300' },
+  //   { type: 'book', height: 'h-52', color: 'bg-lime-300' },
+  //   { type: 'decorative', icon: '🌹' } // Rose
+  // ]
 
   return (
     <div className='dashboard-container'>
@@ -112,7 +113,7 @@ const Dashboard = () => {
             </p>
             <div className='profile-stats'>
               <div className='stat-item'>
-                <p className='stat-value'>65</p>
+                <p className='stat-value'>{books.length}</p>
                 <p className='stat-label'>Books</p>
               </div>
               <div className='stat-item'>
@@ -168,10 +169,10 @@ const Dashboard = () => {
         <div className='posts-grid'>
           {/* Bookshelf Grid */}
 
-          {activeTab === 'posts' &&
+          {/* {activeTab === 'posts' &&
             [...Array(5)].map((_, i) => (
               <div key={i} className='post-item'>
-                {/* Placeholder for images - in a real app, you'd load actual images here */}
+                {/* Placeholder for images - in a real app, you'd load actual images here
                 <img
                   src={`https://placehold.co/300x300/e2e8f0/94a3b8?text=Book+${
                     i + 1
@@ -179,13 +180,64 @@ const Dashboard = () => {
                   alt={`Post ${i + 1}`}
                   className='post-image'
                 />
-                {/* Optional overlay for likes/comments on hover */}
+                {/* Optional overlay for likes/comments on hover 
                 <div className='post-overlay'>
                   <span className='post-stats'>❤️ 123</span>
                   <span className='post-stats'>💬 45</span>
                 </div>
               </div>
-            ))}
+            ))} */}
+          {activeTab === 'posts' && books.length > 0 ? (
+            books.map(book => (
+              <div
+                key={book.id}
+                className='post-item bg-white rounded-lg shadow-md overflow-hidden'
+              >
+                {/* Generic book cover placeholder */}
+                <img
+                  src={`https://placehold.co/400x300/e2e8f0/94a3b8?text=${encodeURIComponent(
+                    book.bookName
+                  )}`}
+                  alt={book.bookName}
+                  className='w-full h-48 object-cover'
+                />
+                <div className='p-4'>
+                  <h6 className='text-sm font-semibold text-gray-900 mb-1'>
+                    {book.bookName}
+                  </h6>
+                  <p className='text-sm text-gray-600 mb-2'>by {book.author}</p>
+                  {book.genres && book.genres.length > 0 && (
+                    <p className='text-xs text-gray-500 mb-2'>
+                      Genres: {book.genres.join(', ')}
+                    </p>
+                  )}
+                  <div className='flex items-center mb-2'>
+                    {/* Display stars based on rating */}
+                    {/* {[1, 2, 3, 4, 5].map((star) => (
+                      <FontAwesomeIcon
+                        key={star}
+                        icon={faStarSolid}
+                        className={`text-yellow-400 ${star > book.rating ? 'opacity-30' : ''}`}
+                      />
+                    ))} */}
+                    <span className='ml-2 text-sm text-gray-500'>
+                      ({book.rating}/5)
+                    </span>
+                  </div>
+                  <p className='text-gray-700 text-sm line-clamp-3'>
+                    {book.review}
+                  </p>
+                  <p className='text-xs text-gray-400 mt-2'>
+                    Added on: {book.dateAdded}
+                  </p>
+                </div>
+              </div>
+            ))
+          ) : activeTab === 'posts' && books.length === 0 ? (
+            <div className='col-span-full text-center text-gray-500 py-10'>
+              No books added yet. Click the '+' icon in the footer to add one!
+            </div>
+          ) : null}
           {activeTab === 'saved' && (
             <div className='no-content-message'>No saved books yet.</div>
           )}
